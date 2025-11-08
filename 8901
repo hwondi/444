@@ -1,0 +1,184 @@
+local player = game.Players.LocalPlayer
+local savedPosition = nil
+local speedValue = 16 -- Velocidade padrão do Humanoid
+local maxSpeed = 120
+local minSpeed = 16
+
+local function createUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "RGBTeleportGui"
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 250, 0, 190)
+    frame.Position = UDim2.new(0.5, -125, 0.5, -95)
+    frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    frame.BorderSizePixel = 0
+    frame.Active = true -- Permite drag
+    frame.Draggable = true -- Agora é drag!
+
+    frame.Parent = screenGui
+
+    -- Minimize Button
+    local minimizeBtn = Instance.new("TextButton", frame)
+    minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+    minimizeBtn.Position = UDim2.new(1, -35, 0, 5)
+    minimizeBtn.Text = "-"
+    minimizeBtn.Font = Enum.Font.Nunito
+    minimizeBtn.TextSize = 20
+    minimizeBtn.BackgroundTransparency = 0.25
+
+    local saveBtn = Instance.new("TextButton", frame)
+    saveBtn.Size = UDim2.new(0, 220, 0, 40)
+    saveBtn.Position = UDim2.new(0, 15, 0, 40)
+    saveBtn.Text = "Salvar Posição"
+    saveBtn.Font = Enum.Font.Nunito
+    saveBtn.TextSize = 20
+    saveBtn.BackgroundTransparency = 0.15
+
+    local tpBtn = Instance.new("TextButton", frame)
+    tpBtn.Size = UDim2.new(0, 220, 0, 40)
+    tpBtn.Position = UDim2.new(0, 15, 0, 90)
+    tpBtn.Text = "Teleportar"
+    tpBtn.Font = Enum.Font.Nunito
+    tpBtn.TextSize = 20
+    tpBtn.BackgroundTransparency = 0.15
+
+    -- Speed Controls
+    local speedLabel = Instance.new("TextLabel", frame)
+    speedLabel.Size = UDim2.new(0, 80, 0, 30)
+    speedLabel.Position = UDim2.new(0, 50, 0, 140)
+    speedLabel.Text = "Velocidade: " .. speedValue
+    speedLabel.Font = Enum.Font.Nunito
+    speedLabel.TextSize = 18
+    speedLabel.BackgroundTransparency = 1
+
+    local speedMinusBtn = Instance.new("TextButton", frame)
+    speedMinusBtn.Size = UDim2.new(0, 30, 0, 30)
+    speedMinusBtn.Position = UDim2.new(0, 15, 0, 140)
+    speedMinusBtn.Text = "-"
+    speedMinusBtn.Font = Enum.Font.Nunito
+    speedMinusBtn.TextSize = 22
+    speedMinusBtn.BackgroundTransparency = 0.15
+
+    local speedPlusBtn = Instance.new("TextButton", frame)
+    speedPlusBtn.Size = UDim2.new(0, 30, 0, 30)
+    speedPlusBtn.Position = UDim2.new(0, 135, 0, 140)
+    speedPlusBtn.Text = "+"
+    speedPlusBtn.Font = Enum.Font.Nunito
+    speedPlusBtn.TextSize = 22
+    speedPlusBtn.BackgroundTransparency = 0.15
+
+    -- Minimized state and restore button
+    local isMinimized = false
+
+    local restoreBtn = Instance.new("TextButton", screenGui)
+    restoreBtn.Size = UDim2.new(0, 110, 0, 30)
+    restoreBtn.Position = UDim2.new(0.5, -55, 0.5, -106)
+    restoreBtn.Text = "Restaurar Painel"
+    restoreBtn.Font = Enum.Font.Nunito
+    restoreBtn.TextSize = 16
+    restoreBtn.BackgroundTransparency = 0.25
+    restoreBtn.Visible = false
+
+    minimizeBtn.MouseButton1Click:Connect(function()
+        frame.Visible = false
+        restoreBtn.Visible = true
+        isMinimized = true
+    end)
+
+    restoreBtn.MouseButton1Click:Connect(function()
+        frame.Visible = true
+        restoreBtn.Visible = false
+        isMinimized = false
+    end)
+
+    -- RGB effect
+    local hue = 0
+    local runService = game:GetService("RunService")
+    runService.RenderStepped:Connect(function()
+        hue = (hue + 0.01) % 1
+        local color = Color3.fromHSV(hue, 1, 1)
+        if frame.Visible then
+            frame.BackgroundColor3 = color
+            minimizeBtn.BackgroundColor3 = color
+            saveBtn.BackgroundColor3 = color
+            tpBtn.BackgroundColor3 = color
+            speedPlusBtn.BackgroundColor3 = color
+            speedMinusBtn.BackgroundColor3 = color
+        end
+        restoreBtn.BackgroundColor3 = color
+    end)
+
+    saveBtn.MouseButton1Click:Connect(function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if root then
+            savedPosition = root.Position
+            saveBtn.Text = "Posição Salva!"
+            wait(1)
+            saveBtn.Text = "Salvar Posição"
+        end
+    end)
+
+    tpBtn.MouseButton1Click:Connect(function()
+        if savedPosition then
+            local char = player.Character or player.CharacterAdded:Wait()
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.CFrame = CFrame.new(savedPosition)
+                tpBtn.Text = "Teleportado!"
+                wait(1)
+                tpBtn.Text = "Teleportar"
+            end
+        else
+            tpBtn.Text = "Nenhuma posição!"
+            wait(1)
+            tpBtn.Text = "Teleportar"
+        end
+    end)
+
+    local function setSpeed(newSpeed)
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = newSpeed
+            end
+        end
+        speedLabel.Text = "Velocidade: " .. newSpeed
+    end
+
+    speedPlusBtn.MouseButton1Click:Connect(function()
+        if speedValue < maxSpeed then
+            speedValue = speedValue + 2 -- Incrementa por 2
+            setSpeed(speedValue)
+        end
+    end)
+
+    speedMinusBtn.MouseButton1Click:Connect(function()
+        if speedValue > minSpeed then
+            speedValue = speedValue - 2 -- Decrementa por 2
+            setSpeed(speedValue)
+        end
+    end)
+
+    -- Garante que altera a speed ao nascer/desaparecer o personagem
+    player.CharacterAdded:Connect(function(char)
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = speedValue
+        end
+    end)
+
+    -- Inicializa speed se personagem já existe
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = speedValue
+        end
+    end
+end
+
+createUI()
